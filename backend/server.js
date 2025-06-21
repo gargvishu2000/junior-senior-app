@@ -29,6 +29,7 @@ const io = new Server(server, {
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5002",
+  'https://junior-senior-app.vercel.app/'
 ];
 
 // Middleware
