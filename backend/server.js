@@ -20,7 +20,18 @@ app.use(cookieParser());
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: function (origin, callback) {
+      // Allow requests with no origin
+      if (!origin) return callback(null, true);
+
+      // Check if origin is in allowed list or matches Vercel pattern
+      if (allowedOrigins.includes(origin) ||
+          origin.match(/^https:\/\/junior-senior-app.*\.vercel\.app$/)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -29,15 +40,29 @@ const io = new Server(server, {
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5002",
-  'https://junior-senior-app.vercel.app/'
-];
+  "https://junior-senior-app.vercel.app",
+  process.env.CLIENT_URL
+].filter(Boolean); // Remove undefined values
 
 // Middleware
 const corsOptions = {
-  origin: allowedOrigins, // Allow frontend URLs
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is in allowed list or matches Vercel pattern
+    if (allowedOrigins.includes(origin) ||
+        origin.match(/^https:\/\/junior-senior-app.*\.vercel\.app$/)) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "x-auth-token"],
   credentials: true,
+  optionsSuccessStatus: 200 // For legacy browser supportclear
 };
 
 app.use(cors(corsOptions));
