@@ -47,7 +47,32 @@ connect(process.env.MONGODB_URI || "mongodb://localhost:27017/qa_platform")
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Routes
+// Root route - API status endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Q&A Chat Platform API',
+    status: 'Server is running',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    endpoints: {
+      auth: '/api/auth',
+      questions: '/api/questions',
+      comments: '/api/comments',
+      chats: '/api/chats'
+    }
+  });
+});
+
+// Health check endpoint (commonly used by deployment platforms)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/comments", commentRoutes);
@@ -165,4 +190,23 @@ io.on("connection", (socket) => {
 
 // Start server
 const PORT = process.env.PORT || 5002;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`API available at: http://localhost:${PORT}`);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err, promise) => {
+  console.error('Unhandled Promise Rejection:', err.message);
+  // Close server & exit process
+  server.close(() => {
+    process.exit(1);
+  });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err.message);
+  process.exit(1);
+});

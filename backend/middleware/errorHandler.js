@@ -36,7 +36,17 @@ export const errorHandler = (err, req, res, next) => {
 
 // 404 handler
 export const notFound = (req, res, next) => {
-  const error = new Error(`Not Found - ${req.originalUrl}`);
-  res.status(404);
-  next(error);
+  // Only handle API routes with 404, let other routes pass through
+  if (req.originalUrl.startsWith('/api/')) {
+    const error = new Error(`API endpoint not found - ${req.originalUrl}`);
+    res.status(404);
+    next(error);
+  } else {
+    // For non-API routes, send a simple 404 response
+    res.status(404).json({
+      error: 'Not Found',
+      message: `The requested resource ${req.originalUrl} was not found on this server.`,
+      suggestion: 'This is an API server. Please check the API documentation for available endpoints.'
+    });
+  }
 };
